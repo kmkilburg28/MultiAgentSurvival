@@ -1,0 +1,10 @@
+class Config:
+    NUM_AGENTS = 3
+    AGENT_VIEW_RADIUS = 2
+    SIZE = 8
+    FOREST_PATCHES = 3
+    WATER_PATCHES = 3
+    DRINK_SIZE = 5
+    FOOD_SIZE = 5
+    FOREST_RENEW_TURNS = 5
+    TILE_SCALE = 64
