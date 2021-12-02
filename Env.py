@@ -38,17 +38,17 @@ class raw_env(AECEnv):
 		self.has_reset = False
 		self.seed()
 
-		max_dir = max([direction.value for direction in list(Direction)])
-		max_task = max([task.value for task in list(Tasks)])
-		self._action_spaces = {agent: spaces.Box(low=np.array([0,1,0]), high=np.array([1,max_dir,max_task]), shape=(3,), dtype=np.uint8) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
 		observation_width = 2*config.AGENT_VIEW_RADIUS+1
 		self._observation_spaces = {
 			agent: spaces.Dict({
-				'grid'   : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.uint8),
-				'dropped': spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.uint8),
-				'agents' : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.uint8),
+				'grid'   : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
+				'dropped': spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
+				'agents' : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
 			}) for agent in self.possible_agents
 		}
+		max_dir = max([direction.value for direction in list(Direction)])
+		max_task = max([task.value for task in list(Tasks)])
+		self._action_spaces = {agent: spaces.Box(low=np.array([0,1,0]), high=np.array([1,max_dir,max_task]), shape=(3,), dtype=np.int32) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
 
 	@functools.lru_cache(maxsize=None)
 	def observation_space(self, agent):
@@ -112,7 +112,6 @@ class raw_env(AECEnv):
 			for col in range(self.map.COLS):
 				if self.map.dropped_grid[row,col] > 0:
 					RenderDroppedFood(row, col, self.map.dropped_grid[row,col])
-				RenderDroppedFood(row,col, 5)
 
 		# Draw agents
 		def RenderAgent(agent_instance: Agent):
@@ -140,6 +139,13 @@ class raw_env(AECEnv):
 			]
 			color = (127,0,0)
 			pygame.draw.polygon(self.screen, color, points)
+
+			# Draw food if carrying
+			if agent_instance.carrying:
+				color = (0,128,0)
+				center = (self.config.TILE_SCALE*(agent_instance.loc[1]+0.5), self.config.TILE_SCALE*(agent_instance.loc[0]+0.5))
+				radius = (height / 6)*self.config.TILE_SCALE
+				pygame.draw.circle(self.screen, color, center, radius)
 
 		for agent in self.agents:
 			agent_instance = self.agent_instances[agent]
@@ -191,6 +197,7 @@ class raw_env(AECEnv):
 		self.dones = {agent: False for agent in self.agents}
 		self.infos = {agent: {} for agent in self.agents}
 		# self.state = {agent: NONE for agent in self.agents}
+		self.agents_alive = len(self.agents)
 		self.num_moves = 0
 
 		self._agent_selector = agent_selector(self.agents)
@@ -208,9 +215,10 @@ class raw_env(AECEnv):
 		agent_instance = self.agent_instances[agent]
 		self.agent_location_mappings.pop(agent_instance.loc)
 		self.map.agents_grid[agent_instance.loc] = 0
+		self.agents_alive -= 1
+		agent_instance.done = True
 		self.rewards[agent] = -1
 		self.dones[agent] = True
-		agent_instance.done = True
 
 	def step(self, action: np.ndarray):
 		agent = self.agent_selection
@@ -220,7 +228,10 @@ class raw_env(AECEnv):
 		# 	if agent_instance.depleted_forests[forest_loc] <= 0:
 		# 		self.map.active_grid[forest_loc] = Tiles.FOREST.value
 		if self.dones[agent]:
-			return self._was_done_step(action)
+			self._was_done_step(action)
+			if self.agents_alive > 0 and self.agent_selection not in self.agents:
+				self.agent_selection = self._agent_selector.next()
+			return
 
 		movement = action[0]
 		direction = action[1]
@@ -286,6 +297,7 @@ class raw_env(AECEnv):
 
 		# selects the next agent.
 		self.agent_selection = self._agent_selector.next()
+		
 		# Adds .rewards to ._cumulative_rewards
 		self._accumulate_rewards()
 		self._clear_rewards()

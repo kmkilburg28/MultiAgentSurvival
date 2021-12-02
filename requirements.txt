@@ -2,3 +2,10 @@ gym
 numpy
 pettingzoo
 pygame
+
+ray
+ray[tune]
+
+dm_tree
+scipy
+lz4
