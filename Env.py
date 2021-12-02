@@ -44,11 +44,12 @@ class raw_env(AECEnv):
 				'grid'   : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
 				'dropped': spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
 				'agents' : spaces.Box(low=0, high=255, shape=(observation_width, observation_width), dtype=np.int32),
+				'status' : spaces.Box(low=0, high=self.config.MAX_HEALTH, shape=(3,), dtype=np.int32),
 			}) for agent in self.possible_agents
 		}
-		max_dir = max([direction.value for direction in list(Direction)])
-		max_task = max([task.value for task in list(Tasks)])
-		self._action_spaces = {agent: spaces.Box(low=np.array([0,1,0]), high=np.array([1,max_dir,max_task]), shape=(3,), dtype=np.int32) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
+		dir_options = max([direction.value for direction in list(Direction)])+1
+		task_options = max([task.value for task in list(Tasks)])+1
+		self._action_spaces = {agent: spaces.MultiDiscrete([2, dir_options, task_options]) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
 
 	@functools.lru_cache(maxsize=None)
 	def observation_space(self, agent):
@@ -64,15 +65,16 @@ class raw_env(AECEnv):
 	def render(self, mode="human"):
 		pygame.display.init()
 		self.screen = pygame.display.set_mode(
-			(self.config.TILE_SCALE * self.map.ROWS, self.config.TILE_SCALE * self.map.COLS))
+			(self.config.TILE_SCALE * self.config.SIZE, self.config.TILE_SCALE * self.config.SIZE))
+		br = self.config.AGENT_VIEW_RADIUS # border radius
 
 		# Draw base tiles
-		for row in range(self.map.ROWS):
-			for col in range(self.map.COLS):
+		for row in range(self.config.SIZE):
+			for col in range(self.config.SIZE):
 				pos = pygame.Rect(
 					self.config.TILE_SCALE * col, self.config.TILE_SCALE * row, self.config.TILE_SCALE, self.config.TILE_SCALE)
 				color = (0,0,0)
-				tile = self.map.active_grid[row,col]
+				tile = self.map.active_grid[row+br,col+br]
 				if tile == Tiles.GRASS.value:
 					color = (0,255,0)
 				elif tile == Tiles.FOREST.value:
@@ -87,13 +89,13 @@ class raw_env(AECEnv):
 
 		# Draw border lines between tiles
 		color = (0,0,0)
-		for row in range(self.map.ROWS):
+		for row in range(self.config.SIZE):
 			pos = pygame.Rect(
-				0, self.config.TILE_SCALE * row-1, self.config.TILE_SCALE*self.map.COLS, 2)
+				0, self.config.TILE_SCALE * row-1, self.config.TILE_SCALE*self.config.SIZE, 2)
 			pygame.draw.rect(self.screen, color, pos)
-		for col in range(self.map.COLS):
+		for col in range(self.config.SIZE):
 			pos = pygame.Rect(
-				self.config.TILE_SCALE * col-1, 0, 2, self.config.TILE_SCALE*self.map.ROWS)
+				self.config.TILE_SCALE * col-1, 0, 2, self.config.TILE_SCALE*self.config.SIZE)
 			pygame.draw.rect(self.screen, color, pos)
 
 		# Draw dropped food
@@ -108,10 +110,10 @@ class raw_env(AECEnv):
 			cornerCol = (col+0.05)*self.config.TILE_SCALE
 			self.screen.blit(text, (cornerCol, cornerRow))
 
-		for row in range(self.map.ROWS):
-			for col in range(self.map.COLS):
-				if self.map.dropped_grid[row,col] > 0:
-					RenderDroppedFood(row, col, self.map.dropped_grid[row,col])
+		for row in range(self.config.SIZE):
+			for col in range(self.config.SIZE):
+				if self.map.dropped_grid[row+br,col+br] > 0:
+					RenderDroppedFood(row, col, self.map.dropped_grid[row+br,col+br])
 
 		# Draw agents
 		def RenderAgent(agent_instance: Agent):
@@ -134,7 +136,7 @@ class raw_env(AECEnv):
 					(0.5+radius, 0.5)
 				]
 			points = [
-				(self.config.TILE_SCALE*(point[0] + agent_instance.loc[1]), self.config.TILE_SCALE*(point[1] + agent_instance.loc[0])) 
+				(self.config.TILE_SCALE*(point[0] + agent_instance.loc[1]-br), self.config.TILE_SCALE*(point[1] + agent_instance.loc[0]-br)) 
 				for point in points
 			]
 			color = (127,0,0)
@@ -143,7 +145,7 @@ class raw_env(AECEnv):
 			# Draw food if carrying
 			if agent_instance.carrying:
 				color = (0,128,0)
-				center = (self.config.TILE_SCALE*(agent_instance.loc[1]+0.5), self.config.TILE_SCALE*(agent_instance.loc[0]+0.5))
+				center = (self.config.TILE_SCALE*(agent_instance.loc[1]+0.5-br), self.config.TILE_SCALE*(agent_instance.loc[0]+0.5-br))
 				radius = (height / 6)*self.config.TILE_SCALE
 				pygame.draw.circle(self.screen, color, center, radius)
 
@@ -161,11 +163,16 @@ class raw_env(AECEnv):
 		minC = col - radius
 		maxC = col + radius+1
 		agents_grid = self.map.agents_grid[minR:maxR, minC:maxC]
-		# agents_grid[radius, radius] = 0
+		status = np.array([
+			agent_instance.health,
+			agent_instance.food,
+			agent_instance.water,
+		], dtype=np.uint8)
 		return {
 			'grid'   : self.map.active_grid[minR:maxR, minC:maxC],
 			'dropped': self.map.dropped_grid[minR:maxR, minC:maxC],
-			'agents' : agents_grid
+			'agents' : agents_grid,
+			'status' : status,
 		}
 
 	def close(self):
@@ -196,23 +203,19 @@ class raw_env(AECEnv):
 		self._cumulative_rewards = {agent: 0 for agent in self.agents}
 		self.dones = {agent: False for agent in self.agents}
 		self.infos = {agent: {} for agent in self.agents}
-		# self.state = {agent: NONE for agent in self.agents}
 		self.agents_alive = len(self.agents)
 		self.num_moves = 0
 
 		self._agent_selector = agent_selector(self.agents)
 		self.agent_selection = self._agent_selector.next()
 		observations = {agent: self.observe(agent) for agent in self.agents}
-		# radius = self.config.AGENT_VIEW_RADIUS
-		# observations = {agent: {
-		# 	'grid'   : np.ones((2*radius, 2*radius)) * Tiles.NULL.value,
-		# 	'dropped': np.zeros((2*radius, 2*radius)),
-		# 	'agents' : np.zeros((2*radius, 2*radius))
-		# } for agent in self.agents}
 		return observations
 
 	def killAgent(self, agent: str):
 		agent_instance = self.agent_instances[agent]
+		agent_instance.health = 0
+		agent_instance.food = 0
+		agent_instance.water = 0
 		self.agent_location_mappings.pop(agent_instance.loc)
 		self.map.agents_grid[agent_instance.loc] = 0
 		self.agents_alive -= 1

@@ -1,11 +1,10 @@
 from enum import Enum
 
 class Direction(Enum):
-	NONE = 0
-	SOUTH  = 1
-	WEST = 2
-	NORTH = 3
-	EAST  = 4
+	SOUTH  = 0
+	WEST = 1
+	NORTH = 2
+	EAST  = 3
 
 	def getNextTile(row: int, col: int, direction: int):
 		if Direction.SOUTH.value == direction:
