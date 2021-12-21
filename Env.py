@@ -50,6 +50,7 @@ class raw_env(AECEnv):
 		dir_options = max([direction.value for direction in list(Direction)])+1
 		task_options = max([task.value for task in list(Tasks)])+1
 		self._action_spaces = {agent: spaces.MultiDiscrete([2, dir_options, task_options]) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
+		# self._action_spaces = {agent: spaces.Tuple([spaces.Discrete(2), spaces.Discrete(dir_options), spaces.Discrete(task_options)]) for agent in self.possible_agents} # movement, action (None, drink water (direction), consume food from ground, consume food from hands, drop food, attack (direction))
 
 	@functools.lru_cache(maxsize=None)
 	def observation_space(self, agent):
@@ -253,15 +254,22 @@ class raw_env(AECEnv):
 			dstRow, dstCol = Direction.getNextTile(row, col, direction)
 			if self.map.active_grid[dstRow,dstCol] == Tiles.WATER.value:
 				agent_instance.drink(self.config.DRINK_SIZE)
+				# if agent_instance.water < self.config.MAX_WATER - 2:
+				# 	self.rewards[agent] += 0.001
 		elif task == Tasks.CONSUME_GROUND.value:
 			if self.map.active_grid[row,col] == Tiles.FOREST.value:
 				agent_instance.eat(self.config.FOOD_SIZE)
 				self.map.active_grid[row,col] = Tiles.FOREST_DEPLETED.value
+				# if agent_instance.food < self.config.MAX_FOOD - 2:
+				# 	self.rewards[agent] += 0.001
 				# agent_instance.depleted_forest[(row,col)] = self.config.FOREST_RENEW_TURNS
 		elif task == Tasks.CONSUME_CARRY.value:
 			if agent_instance.carrying:
 				agent_instance.eat(self.config.FOOD_SIZE)
+				self.map.agents_grid[row,col] = 1
 				agent_instance.carrying = False
+				# if agent_instance.food < self.config.MAX_FOOD - 2:
+				# 	self.rewards[agent] += 0.001
 		elif task == Tasks.PICK_UP.value:
 			if not agent_instance.carrying:
 				if self.map.dropped_grid[row,col] > 0:
@@ -271,10 +279,13 @@ class raw_env(AECEnv):
 					agent_instance.carrying = True
 					self.map.active_grid[row,col] = Tiles.FOREST_DEPLETED.value
 					# agent_instance.depleted_forest[(row,col)] = self.config.FOREST_RENEW_TURNS
+				if agent_instance.carrying:
+					self.map.agents_grid[row,col] += 1
 		if task == Tasks.DROP.value or task == Tasks.ATTACK.value:
 			if agent_instance.carrying:
 				agent_instance.carrying = False
 				self.map.dropped_grid[row,col] += self.config.FOOD_SIZE
+				self.map.agents_grid[row,col] = 1
 
 		if movement:
 			dstRow, dstCol = Direction.getNextTile(row, col, direction)

@@ -64,3 +64,41 @@ class Map:
 		grid[:,size+radius:] = Tiles.NULL.value
 
 		return Map(grid)
+
+	def createFromObservation(obs):
+		"""Used for simulating an observation without additional map info.
+
+		Args:
+			obs ({"grid", "dropped", "agents"}): An agent's observation.
+
+		Returns:
+			Map: A new map constructed purely from the provided observation.
+		"""
+		# radius = config.AGENT_VIEW_RADIUS
+		# shape = (
+		# 	obs["grid"].shape[0] + 2*radius,
+		# 	obs["grid"].shape[1] + 2*radius
+		# )
+		# grid = np.ones(shape, np.uint8) * Tiles.NULL.value
+		# dropped = np.zeros(shape, np.uint8)
+		# agents = np.zeros(shape, np.uint8)
+		# for row in range(obs["grid"].shape[0]):
+		# 	cur_row = row + radius
+		# 	for col in range(obs["grid"].shape[1]):
+		# 		cur_col = col + radius
+		# 		grid[cur_row,cur_col] = obs["grid"][row,col]
+		# 		dropped[cur_row,cur_col] = obs["grid"][row,col]
+		# 		agents[cur_row,cur_col] = obs["grid"][row,col]
+		# map = Map(grid)
+		# map.dropped_grid = dropped
+		# map.agents_grid = agents
+		map = Map(obs["grid"])
+		map.dropped_grid = obs["dropped"].copy()
+		map.agents_grid = obs["agents"].copy()
+		return map
+
+	def clone(self):
+		map = Map(self.active_grid)
+		map.dropped_grid = self.dropped_grid.copy()
+		map.agents_grid = self.agents_grid.copy()
+		return map
