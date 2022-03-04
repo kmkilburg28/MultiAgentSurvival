@@ -4,6 +4,10 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.pg import PGTrainer
 from ray.rllib.agents.marwil import BCTrainer
 
+import sys
+import os
+sys.path.append(os.getcwd())
+
 import src.environment.Env as Env
 from src.environment.Config import Config
 from src.models.utils.CustomMetricsCallbacks import CustomMetricsCallbacks

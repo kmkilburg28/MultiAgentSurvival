@@ -14,8 +14,12 @@ import numpy as np
 from gym import spaces
 from supersuit import action_lambda_v1
 
-import environment.Env as Env
-from environment.Config import Config
+import sys
+import os
+sys.path.append(os.getcwd())
+
+import src.environment.Env as Env
+from src.environment.Config import Config
 
 class MyModelClass(TFModelV2): #, nn.Module):
 	def __init__(self, obs_space, act_space, num_outputs, *args, **kwargs):

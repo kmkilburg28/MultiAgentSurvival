@@ -5,12 +5,14 @@ sys.path.append(os.getcwd())
 import src.environment.Env as Env
 from src.environment.Config import Config
 
+from src.models.static.idle_policy import policy as IdlePolicy
 from src.models.static.random_policy import policy as RandomPolicy
 from src.models.static.SearchPolicy import policy as SearchPolicy
 from src.models.utils.logger import Logger
 
 if __name__ == "__main__":
 	policies = {
+		"IdlePolicy"  : IdlePolicy,
 		"RandomPolicy": RandomPolicy,
 		"SearchPolicy": SearchPolicy,
 	}

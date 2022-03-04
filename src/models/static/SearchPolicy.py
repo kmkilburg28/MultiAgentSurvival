@@ -1,21 +1,15 @@
-
-from random import randint
-from pettingzoo.test import api_test
-
-import src.environment.Env as Env
-from src.environment.Config import Config
-from src.environment.Agent import Agent
-from src.environment.Tiles import Tiles
-from src.environment.Direction import Direction
-from src.environment.Tasks import Tasks
-from src.environment.virtual.SearchEnv import SearchEnv, Node
-
 import numpy as np
 from queue import PriorityQueue
 
-config = Config()
-env = Env.env(config)
-api_test(env, num_cycles=10, verbose_progress=False)
+import sys
+import os
+sys.path.append(os.getcwd())
+
+from src.environment.Agent import Agent
+from src.environment.Tiles import Tiles
+from src.environment.Config import Config
+from src.environment.virtual.SearchEnv import SearchEnv, Node
+from src.models.utils.run_policy import run_policy
 
 
 def searchHeuristic(searchEnv: SearchEnv):
@@ -52,7 +46,7 @@ def evaluationHeuristic2(searchEnv: SearchEnv, depth: int):
 
 
 def SearchPolicy(obs, searchH, evaluationH, max_depth):
-	initialSearchEnv = SearchEnv(config, obs)
+	initialSearchEnv = SearchEnv(Config(), obs)
 	agent = initialSearchEnv.agent_selection
 	INITIAL_STATE = initialSearchEnv.getState(agent)
 	ROOT = Node(None, None, INITIAL_STATE, initialSearchEnv)
@@ -94,16 +88,4 @@ def policy(observation, agent):
     return SearchPolicy(observation, searchHeuristic, evaluationHeuristic2, 4)
 
 if __name__ == "__main__":
-	env.reset()
-	iter_num = -1
-	lifespans = {agent: 0 for agent in env.agents}
-	for agent in env.agent_iter():
-		observation, reward, done, info = env.last() # note that info is empty
-
-		if not done:
-			lifespans[agent] += 1
-		action = policy(observation, agent) if not done else None
-		env.step(action)
-		env.render()
-	print("lifespans", lifespans)
-	print("average lifespan", sum(lifespans.values()) / len(lifespans))
+	run_policy(policy)
