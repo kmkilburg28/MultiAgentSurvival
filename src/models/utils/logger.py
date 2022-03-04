@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Dict
 import numpy as np
 
 def np_encoder(object):
@@ -10,8 +9,11 @@ def np_encoder(object):
 class Logger:
     
 	def __init__(self, base):
+		logs_dir = "logs"
+		if not os.path.isdir(logs_dir):
+			os.mkdir(logs_dir)
 		base = os.path.basename(base)
-		base_dir = os.path.join("logs", base)
+		base_dir = os.path.join(logs_dir, base)
 		if not os.path.isdir(base_dir):
 			os.mkdir(base_dir)
 

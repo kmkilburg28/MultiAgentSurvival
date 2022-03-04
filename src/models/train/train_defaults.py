@@ -4,10 +4,10 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.pg import PGTrainer
 from ray.rllib.agents.marwil import BCTrainer
 
-import Env
-from Config import Config
-from CustomMetricsCallbacks import CustomMetricsCallbacks
-from logger import Logger
+import src.environment.Env as Env
+from src.environment.Config import Config
+from src.models.utils.CustomMetricsCallbacks import CustomMetricsCallbacks
+from src.models.utils.logger import Logger
 import os
 
 
@@ -31,6 +31,7 @@ trainings = {
 
 def env_creator():
 	config = Config()
+	config.RENDER_ENABLE = False
 	env = Env.env(config)
 	return env
 

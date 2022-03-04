@@ -4,12 +4,12 @@ import numpy as np
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 
-from Config import Config
-from Direction import Direction
-from Tasks import Tasks
-from Tiles import Tiles
-from Agent import Agent
-from Map import Map
+from src.environment.Config import Config
+from src.environment.Direction import Direction
+from src.environment.Tasks import Tasks
+from src.environment.Tiles import Tiles
+from src.environment.Agent import Agent
+from src.environment.Map import Map
 
 	
 class SearchEnv(AECEnv):
@@ -141,7 +141,7 @@ class SearchEnv(AECEnv):
 			if agent_instance.carrying:
 				agent_instance.carrying = False
 				self.map.dropped_grid[row,col] += self.config.FOOD_SIZE
-				self.map.agents_grid[row,col] -= 1
+				self.map.agents_grid[row,col] = 1
 
 		if movement:
 			dstRow, dstCol = Direction.getNextTile(row, col, direction)

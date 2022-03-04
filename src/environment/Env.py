@@ -10,12 +10,12 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from Config import Config
-from Direction import Direction
-from Tasks import Tasks
-from Tiles import Tiles
-from Agent import Agent
-from Map import Map
+from src.environment.Config import Config
+from src.environment.Direction import Direction
+from src.environment.Tasks import Tasks
+from src.environment.Tiles import Tiles
+from src.environment.Agent import Agent
+from src.environment.Map import Map
 
 
 NONE = 0
@@ -64,6 +64,9 @@ class raw_env(AECEnv):
 		self.np_random, seed = seeding.np_random(seed)
 
 	def render(self, mode="human"):
+		if not self.config.RENDER_ENABLE:
+			return
+
 		pygame.display.init()
 		self.screen = pygame.display.set_mode(
 			(self.config.TILE_SCALE * self.config.SIZE, self.config.TILE_SCALE * self.config.SIZE))

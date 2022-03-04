@@ -1,7 +1,7 @@
 import numpy as np
 from random import randrange
-from Config import Config
-from Tiles import Tiles
+from src.environment.Config import Config
+from src.environment.Tiles import Tiles
 
 class Map:
 	def __init__(self, grid: np.ndarray):

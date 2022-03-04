@@ -7,6 +7,7 @@ class Config:
 
 	# Rendering
 	TILE_SCALE = 32
+	RENDER_ENABLE = True
 
 	# Agent
 	NUM_AGENTS = 8

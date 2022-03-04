@@ -1,5 +1,5 @@
-from Config import Config
-from Direction import Direction
+from src.environment.Config import Config
+from src.environment.Direction import Direction
 
 class Agent:
 

@@ -1,21 +1,21 @@
 
 from random import randint
-from Agent import Agent
-from Tiles import Tiles
 from pettingzoo.test import api_test
 
-import Env
-from Config import Config
-from Direction import Direction
-from Tasks import Tasks
+import src.environment.Env as Env
+from src.environment.Config import Config
+from src.environment.Agent import Agent
+from src.environment.Tiles import Tiles
+from src.environment.Direction import Direction
+from src.environment.Tasks import Tasks
+from src.environment.virtual.SearchEnv import SearchEnv, Node
+
 import numpy as np
+from queue import PriorityQueue
 
 config = Config()
 env = Env.env(config)
 api_test(env, num_cycles=10, verbose_progress=False)
-
-from SearchEnv import SearchEnv, Node
-from queue import PriorityQueue
 
 
 def searchHeuristic(searchEnv: SearchEnv):

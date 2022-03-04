@@ -1,10 +1,10 @@
 from random import randint
 from pettingzoo.test import api_test
 
-import Env
-from Config import Config
-from Direction import Direction
-from Tasks import Tasks
+import src.environment.Env as Env
+from src.environment.Config import Config
+from src.environment.Direction import Direction
+from src.environment.Tasks import Tasks
 
 # Random policy
 max_dir = max([direction.value for direction in list(Direction)])

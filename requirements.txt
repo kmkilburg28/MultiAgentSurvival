@@ -5,6 +5,7 @@ pygame
 
 ray
 ray[tune]
+ray[rllib]
 
 dm_tree
 scipy

@@ -1,6 +1,10 @@
-import matplotlib.pyplot as plt
-from logger import Logger
+import sys
 import os
+sys.path.append(os.getcwd())
+
+import matplotlib.pyplot as plt
+from datetime import datetime
+from src.models.utils.logger import Logger
 
 trainings = [
 	("bc", "BC"),
@@ -16,8 +20,11 @@ for training in trainings:
 	log_title = training[1]
 
 	logs_path = os.path.join('logs', log_name, log_name + '0.log')
+	if not os.path.exists(logs_path):
+		print("Log file '{0}' not found.".format(logs_path))
+		continue
 	training_logs = Logger.read(logs_path)
-	from datetime import datetime
+
 	training_time = datetime.fromtimestamp(training_logs[-1]['timestamp']) - datetime.fromtimestamp(training_logs[0]['timestamp'])
 	print(log_title, len(training_logs), training_time, training_logs[-1]['custom_metrics']['avg_lifespan_mean'], training_logs[-1]['custom_metrics']['max_lifespan_mean'])
 	
